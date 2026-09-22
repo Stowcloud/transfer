@@ -39,7 +39,10 @@ func TestPublicationIdentityAndUncertainReconciliation(t *testing.T) {
 }
 
 type reconcilerFunc func(context.Context, Intent) (Result, Receipt, error)
-func (f reconcilerFunc) Reconcile(ctx context.Context, i Intent) (Result, Receipt, error) { return f(ctx, i) }
+
+func (f reconcilerFunc) Reconcile(ctx context.Context, i Intent) (Result, Receipt, error) {
+	return f(ctx, i)
+}
 
 func TestSessionTransitionsRejectTerminalResurrection(t *testing.T) {
 	if _, err := Transition(StateDone, StateReceiving); err == nil {
@@ -78,5 +81,15 @@ func TestPublicationErrorPreservesEvidence(t *testing.T) {
 	e := &PublicationError{Result: Result{Outcome: PublicationUncertain, Commit: true}, Receipt: Receipt{Operation: "op"}, Err: want}
 	if !errors.Is(e, want) || e.Result.Outcome != PublicationUncertain || e.Receipt.Operation != "op" {
 		t.Fatal("publication evidence was not retained")
+	}
+}
+
+func TestIntervalSetPastLengthIsComplete(t *testing.T) {
+	set := NewIntervalSet()
+	if err := set.Insert(0, 11); err != nil {
+		t.Fatal(err)
+	}
+	if !set.IsComplete(10) {
+		t.Fatal("coverage past the requested length is incomplete")
 	}
 }

@@ -133,7 +133,7 @@ func (s *IntervalSet) IsComplete(length uint64) bool {
 	if length == 0 {
 		return len(s.runs) == 0
 	}
-	return len(s.runs) == 1 && s.runs[0].Lo == 0 && s.runs[0].Hi == length
+	return len(s.runs) == 1 && s.runs[0].Lo == 0 && s.runs[0].Hi >= length
 }
 
 // Missing returns the uncovered ranges below length.
