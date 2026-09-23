@@ -93,3 +93,36 @@ func TestIntervalSetPastLengthIsComplete(t *testing.T) {
 		t.Fatal("coverage past the requested length is incomplete")
 	}
 }
+
+func TestSessionIDRoundTripsAndRejectsMalformedValues(t *testing.T) {
+	id, err := NewSessionID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	back, err := ParseSessionID(id.String())
+	if err != nil || back != id {
+		t.Fatalf("round trip = %v, %v", back, err)
+	}
+	if _, err := ParseSessionID(id.String() + "="); !errors.Is(err, ErrInvalidSessionID) {
+		t.Fatalf("padded ID error = %v", err)
+	}
+	if _, err := SessionIDFromBytes([]byte("short")); !errors.Is(err, ErrInvalidSessionID) {
+		t.Fatalf("short ID error = %v", err)
+	}
+}
+
+func TestSessionSpecAndTransitionsRemainNeutral(t *testing.T) {
+	spec := SessionSpec{Mode: SpoolNameOrdered, RandomAccess: true}
+	if spec.Mode.ModeName() != "named" {
+		t.Fatalf("mode = %q", spec.Mode.ModeName())
+	}
+	if _, err := Transition(StateReceiving, StateFinalizing); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Transition(StateDone, StateReceiving); err == nil {
+		t.Fatal("terminal session was resurrected")
+	}
+	if err := ValidateDigest(AlgoCRC32C, 3); !errors.Is(err, ErrInvalidChecksum) {
+		t.Fatalf("invalid digest error = %v", err)
+	}
+}
